@@ -1,0 +1,422 @@
+
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Face Emotion Detector</title>
+
+<script src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
+
+<style>
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  padding: 20px;
+  font-family: Arial, sans-serif;
+  background: linear-gradient(135deg,#101a34,#263f70);
+  color: white;
+}
+
+.container {
+  max-width: 950px;
+  margin: auto;
+}
+
+header {
+  text-align: center;
+  padding: 20px;
+}
+
+header h1 {
+  font-size: 30px;
+}
+
+.card {
+  background: #172541;
+  padding: 20px;
+  border-radius: 16px;
+  margin-bottom: 20px;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
+.camera {
+  background: black;
+  border-radius: 12px;
+  overflow: hidden;
+  aspect-ratio: 4/3;
+}
+
+video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transform: scaleX(-1);
+}
+
+button {
+  padding: 12px 20px;
+  border: none;
+  border-radius: 9px;
+  background: #60a5fa;
+  color: #081326;
+  font-weight: bold;
+  cursor: pointer;
+  margin: 8px 5px 0 0;
+}
+
+button:disabled {
+  opacity: .5;
+  cursor: not-allowed;
+}
+
+#hasil {
+  text-align: center;
+  padding: 20px;
+}
+
+.emoji {
+  font-size: 65px;
+}
+
+.emotion {
+  font-size: 25px;
+  font-weight: bold;
+  margin: 10px;
+}
+
+.bar-row {
+  display: grid;
+  grid-template-columns: 100px 1fr 45px;
+  gap: 8px;
+  align-items: center;
+  margin: 15px 0;
+  font-size: 13px;
+}
+
+.bar-bg {
+  height: 12px;
+  background: #354765;
+  border-radius: 20px;
+  overflow: hidden;
+}
+
+.bar {
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg,#60a5fa,#34d399);
+}
+
+small {
+  color: #b8c7e2;
+}
+
+#status {
+  margin-top: 12px;
+  color: #93c5fd;
+}
+
+@media(max-width:700px) {
+  .grid {
+    grid-template-columns: 1fr;
+  }
+}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+<header>
+  <h1>🎭 AI FACE EMOTION DETECTOR</h1>
+  <p>APLIKASI DETEKSI EKSPRESI WAJAH</p>
+  <small>Media Pembelajaran Informatika</small>
+</header>
+
+<div class="grid">
+
+<section class="card">
+
+<h2>📷 Kamera Sensor</h2>
+
+<div class="camera">
+  <video id="video" autoplay muted playsinline></video>
+</div>
+
+<button id="mulai" onclick="mulaiKamera()">
+  MULAI KAMERA
+</button>
+
+<button id="berhenti" onclick="berhentiKamera()" disabled>
+  BERHENTI
+</button>
+
+<p id="status">Kamera belum aktif.</p>
+
+</section>
+
+<section class="card">
+
+<h2>🧠 Hasil Deteksi AI</h2>
+
+<div id="hasil">
+  <div class="emoji" id="emoji">🙂</div>
+  <div class="emotion" id="emosi">
+    Menunggu Deteksi
+  </div>
+  <p id="persen">Belum ada hasil</p>
+</div>
+
+<h3>Persentase Ekspresi</h3>
+
+<div id="daftar"></div>
+
+</section>
+
+</div>
+
+<section class="card">
+<h3>📚 Informasi Aplikasi</h3>
+<p>
+Aplikasi ini menggunakan teknologi Artificial Intelligence
+untuk memperkirakan ekspresi visual wajah manusia melalui kamera.
+</p>
+<p>
+Hasil prediksi bukan pembacaan emosi atau kondisi psikologis
+seseorang secara pasti.
+</p>
+<p>
+Privasi: video diproses di browser dan tidak dikirim ke server
+oleh kode aplikasi ini. Gunakan kamera dengan persetujuan orang
+yang berada di depannya.
+</p>
+</section>
+
+</div>
+
+<script>
+
+const video = document.getElementById("video");
+
+const ekspresi = {
+  neutral: ["Netral","😐"],
+  happy: ["Bahagia","😊"],
+  sad: ["Sedih","😢"],
+  angry: ["Marah","😠"],
+  fearful: ["Takut","😨"],
+  disgusted: ["Jijik","🤢"],
+  surprised: ["Terkejut","😲"]
+};
+
+let kamera = null;
+let interval = null;
+let modelSiap = false;
+let sedangDeteksi = false;
+
+const daftar = document.getElementById("daftar");
+
+for (let key in ekspresi) {
+  daftar.innerHTML += `
+    <div class="bar-row">
+      <span>${ekspresi[key][0]}</span>
+      <div class="bar-bg">
+        <div class="bar" id="bar-${key}"></div>
+      </div>
+      <span id="nilai-${key}">0%</span>
+    </div>
+  `;
+}
+
+async function muatModel() {
+
+  const alamat =
+  "https://cdn.jsdelivr.net/gh/justadudewhohacks/face-api.js@master/weights";
+
+  await faceapi.nets.tinyFaceDetector.loadFromUri(alamat);
+
+  await faceapi.nets.faceExpressionNet.loadFromUri(alamat);
+
+  modelSiap = true;
+}
+
+async function mulaiKamera() {
+
+  try {
+
+    document.getElementById("status").innerText =
+    "Memuat model AI...";
+
+    document.getElementById("mulai").disabled = true;
+
+    if (!modelSiap) {
+      await muatModel();
+    }
+
+    kamera = await navigator.mediaDevices.getUserMedia({
+      video: {
+        facingMode: "user"
+      },
+      audio: false
+    });
+
+    video.srcObject = kamera;
+
+    await video.play();
+
+    document.getElementById("status").innerText =
+    "Kamera aktif - AI sedang mendeteksi";
+
+    document.getElementById("berhenti").disabled = false;
+
+    interval = setInterval(deteksiWajah, 700);
+
+  } catch (error) {
+
+    document.getElementById("status").innerText =
+    "Gagal: " + error.message;
+
+    document.getElementById("mulai").disabled = false;
+
+  }
+
+}
+
+async function deteksiWajah() {
+
+  if (!kamera || sedangDeteksi || video.readyState < 2) return;
+
+  sedangDeteksi = true;
+
+  try {
+
+    const hasil =
+      await faceapi.detectSingleFace(
+        video,
+        new faceapi.TinyFaceDetectorOptions()
+      ).withFaceExpressions();
+
+    if (hasil) {
+
+      tampilkanHasil(hasil.expressions);
+
+    } else {
+
+      document.getElementById("emoji").innerText = "🔎";
+
+      document.getElementById("emosi").innerText =
+      "Wajah Tidak Terdeteksi";
+
+      document.getElementById("persen").innerText =
+      "Arahkan wajah ke kamera";
+
+    }
+
+  } catch (error) {
+
+    document.getElementById("status").innerText =
+    "Kesalahan deteksi: " + error.message;
+
+  } finally {
+
+    sedangDeteksi = false;
+
+  }
+
+}
+
+function tampilkanHasil(data) {
+
+  let tertinggi = "neutral";
+  let nilaiTertinggi = -1;
+
+  for (let key in ekspresi) {
+
+    let nilai = data[key] || 0;
+
+    if (nilai > nilaiTertinggi) {
+
+      nilaiTertinggi = nilai;
+      tertinggi = key;
+
+    }
+
+    document.getElementById("bar-" + key)
+      .style.width = (nilai * 100) + "%";
+
+    document.getElementById("nilai-" + key)
+      .innerText = Math.round(nilai * 100) + "%";
+
+  }
+
+  document.getElementById("emoji").innerText =
+  ekspresi[tertinggi][1];
+
+  document.getElementById("emosi").innerText =
+  ekspresi[tertinggi][0];
+
+  document.getElementById("persen").innerText =
+  "Skor prediksi: " + Math.round(nilaiTertinggi * 100) + "%";
+
+}
+
+function berhentiKamera() {
+
+  if (interval) {
+    clearInterval(interval);
+    interval = null;
+  }
+
+  if (kamera) {
+
+    kamera.getTracks().forEach(track => track.stop());
+
+    kamera = null;
+
+  }
+
+  video.srcObject = null;
+
+  document.getElementById("status").innerText =
+  "Kamera telah dihentikan.";
+
+  document.getElementById("emosi").innerText =
+  "Menunggu Deteksi";
+
+  document.getElementById("emoji").innerText = "🙂";
+
+  document.getElementById("persen").innerText =
+  "Belum ada hasil";
+
+  document.getElementById("mulai").disabled = false;
+
+  document.getElementById("berhenti").disabled = true;
+
+}
+
+window.addEventListener("beforeunload", () => {
+  if (kamera) {
+    kamera.getTracks().forEach(track => track.stop());
+  }
+});
+
+muatModel().then(() => {
+  document.getElementById("status").innerText =
+  "Model AI siap. Silakan mulai kamera.";
+}).catch(error => {
+  document.getElementById("status").innerText =
+  "Model gagal dimuat. Periksa koneksi internet.";
+});
+
+</script>
+
+</body>
+</html>
