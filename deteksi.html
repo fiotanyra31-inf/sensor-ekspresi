@@ -1,334 +1,217 @@
+from pathlib import Path
 
-<!DOCTYPE html>
+html = r'''<!DOCTYPE html>
 <html lang="id">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Deteksi Ekspresi Wajah</title>
-
-  <script src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
-
-  <style>
-    * {
-      box-sizing: border-box;
-    }
-
-    body {
-      font-family: Arial, sans-serif;
-      background: linear-gradient(135deg, #172554, #4338ca);
-      color: white;
-      text-align: center;
-      margin: 0;
-      padding: 25px 15px;
-    }
-
-    .container {
-      max-width: 750px;
-      margin: auto;
-      background: white;
-      color: #1e293b;
-      padding: 25px;
-      border-radius: 20px;
-      box-shadow: 0 10px 30px #0004;
-    }
-
-    h1 {
-      color: #3730a3;
-    }
-
-    .camera {
-      position: relative;
-      width: 100%;
-      max-width: 500px;
-      margin: 20px auto;
-      background: #111827;
-      border-radius: 15px;
-      overflow: hidden;
-      min-height: 280px;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-    }
-
-    video {
-      width: 100%;
-      display: block;
-      transform: scaleX(-1);
-    }
-
-    #placeholder {
-      color: white;
-      padding: 20px;
-    }
-
-    button {
-      border: none;
-      padding: 12px 20px;
-      margin: 6px;
-      border-radius: 10px;
-      cursor: pointer;
-      font-size: 15px;
-      font-weight: bold;
-    }
-
-    #startBtn {
-      background: #16a34a;
-      color: white;
-    }
-
-    #stopBtn {
-      background: #dc2626;
-      color: white;
-    }
-
-    button:disabled {
-      opacity: 0.5;
-      cursor: not-allowed;
-    }
-
-    .result {
-      background: #eef2ff;
-      padding: 20px;
-      border-radius: 15px;
-      margin-top: 20px;
-    }
-
-    #expression {
-      font-size: 28px;
-      font-weight: bold;
-      color: #4338ca;
-      margin: 12px;
-    }
-
-    .bar-row {
-      text-align: left;
-      margin: 12px 0;
-    }
-
-    .bar-bg {
-      height: 12px;
-      background: #dbeafe;
-      border-radius: 20px;
-      overflow: hidden;
-    }
-
-    .bar {
-      height: 100%;
-      width: 0%;
-      background: #6366f1;
-      transition: width 0.2s;
-    }
-
-    #status {
-      color: #475569;
-      font-size: 14px;
-      margin-top: 15px;
-    }
-
-    .note {
-      font-size: 12px;
-      color: #64748b;
-      margin-top: 20px;
-    }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Quiz Informatika - Sistem Komputer</title>
+<style>
+:root{--navy:#14213d;--blue:#2563eb;--light:#f3f6fb;--green:#16834a;--red:#c62828}
+*{box-sizing:border-box}body{margin:0;background:var(--light);font-family:Arial,Helvetica,sans-serif;color:#172033}
+header{background:linear-gradient(120deg,#14213d,#2563eb);color:white;padding:25px 18px;text-align:center}
+header h1{margin:0 0 8px;font-size:clamp(22px,4vw,32px)}header p{margin:0;opacity:.9}
+main{max-width:850px;margin:24px auto;padding:0 14px}.panel{background:#fff;border-radius:16px;padding:22px;box-shadow:0 6px 24px #14213d12;margin-bottom:18px}
+label{display:block;font-weight:700;margin:12px 0 6px}input{width:100%;padding:12px;border:1px solid #cbd5e1;border-radius:9px;font-size:16px}
+button{border:0;border-radius:10px;padding:12px 18px;font-size:15px;font-weight:700;cursor:pointer;background:var(--blue);color:white}
+button:disabled{opacity:.5;cursor:not-allowed}.secondary{background:#e8eefc;color:#173b83}.danger{background:var(--red)}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center;justify-content:space-between}
+.muted{color:#64748b;font-size:14px;line-height:1.5}.hidden{display:none!important}
+.topline{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;font-weight:700;color:#334155}
+.progress{height:9px;background:#e2e8f0;border-radius:99px;overflow:hidden;margin:15px 0}.progress span{display:block;height:100%;width:0;background:#2563eb;transition:width .2s}
+.question{font-size:20px;line-height:1.45;font-weight:700;margin:18px 0}
+.option{display:flex;gap:10px;align-items:flex-start;padding:13px;border:1px solid #dbe3ef;border-radius:10px;margin:10px 0;cursor:pointer}
+.option:hover{background:#f5f8ff}.option input{width:auto;margin-top:3px}.option.selected{border-color:#2563eb;background:#eff6ff}
+.notice{padding:12px 14px;border-radius:10px;background:#fff7df;color:#754b00;font-size:14px;line-height:1.5}
+.status{padding:12px;border-radius:10px;background:#fff1f1;color:#9b1c1c;margin-top:12px;font-weight:700}
+.stat{background:#f1f5f9;border-radius:10px;padding:14px;min-width:130px;flex:1}
+.stat strong{display:block;font-size:25px;margin-top:5px}
+footer{text-align:center;color:#64748b;padding:20px;font-size:13px}
+table{border-collapse:collapse;width:100%;font-size:14px}th,td{padding:9px;border-bottom:1px solid #e2e8f0;text-align:left}
+@media(max-width:600px){.panel{padding:17px}.row button{flex:1}.question{font-size:18px}}
+</style>
 </head>
-
 <body>
-  <div class="container">
-    <h1>😊 Deteksi Ekspresi Wajah</h1>
-    <p>Aplikasi pembelajaran kecerdasan buatan (AI)</p>
-
-    <div class="camera">
-      <video id="video" autoplay muted playsinline hidden></video>
-      <div id="placeholder">
-        Kamera belum diaktifkan
-      </div>
+<header>
+  <h1>QUIZ INFORMATIKA</h1>
+  <p>Materi: Sistem Komputer • Tingkat SMP • 20 Soal Pilihan Berganda</p>
+</header>
+<main>
+  <section id="intro" class="panel">
+    <h2>Identitas Peserta</h2>
+    <p class="muted">Isi identitas dengan benar sebelum memulai kuis. Pastikan koneksi dan perangkat dalam keadaan baik.</p>
+    <label for="studentName">Nama lengkap</label><input id="studentName" autocomplete="name" placeholder="Masukkan nama lengkap">
+    <label for="studentClass">Kelas</label><input id="studentClass" placeholder="Contoh: VII-A">
+    <div class="notice" style="margin-top:16px"><b>Ketentuan kuis:</b><br>
+      • Kuis terdiri dari 20 soal pilihan berganda.<br>
+      • Pilih satu jawaban yang paling tepat pada setiap soal.<br>
+      • Berpindah tab atau jendela aplikasi akan dicatat sebagai peringatan. Bunyi peringatan aktif setelah tombol Mulai ditekan.<br>
+      • Fitur ini hanya mendeteksi kejadian yang dapat dilaporkan oleh browser; bukan pengawasan menyeluruh terhadap perangkat.
     </div>
+    <p class="muted">Catatan privasi: peringatan dapat muncul saat jendela kehilangan fokus, termasuk karena notifikasi atau tindakan tidak sengaja. Guru perlu meninjau catatan secara wajar.</p>
+    <button id="startBtn">Mulai Kuis</button>
+  </section>
 
-    <button id="startBtn" disabled>Mulai Kamera</button>
-    <button id="stopBtn" disabled>Matikan Kamera</button>
-
-    <p id="status">Memuat model AI...</p>
-
-    <div class="result">
-      <h3>Hasil Deteksi</h3>
-      <div id="expression">Menunggu...</div>
-      <div id="confidence">Tingkat keyakinan: -</div>
-      <div id="bars"></div>
+  <section id="quiz" class="panel hidden">
+    <div class="topline"><span id="progressText">Soal 1 dari 20</span><span id="timer">Waktu: 30:00</span></div>
+    <div class="progress"><span id="progressBar"></span></div>
+    <div id="questionText" class="question"></div>
+    <div id="options"></div>
+    <div class="row" style="margin-top:20px">
+      <button id="prevBtn" class="secondary">Sebelumnya</button>
+      <button id="nextBtn">Berikutnya</button>
+      <button id="finishBtn" class="danger">Selesaikan Kuis</button>
     </div>
+    <div id="warningBox" class="status hidden" role="alert"></div>
+  </section>
 
-    <p class="note">
-      Deteksi ini memperkirakan ekspresi wajah yang terlihat,
-      bukan memastikan perasaan seseorang.
-      Video diproses di browser dan tidak dikirim ke server aplikasi.
-    </p>
-  </div>
+  <section id="result" class="panel hidden">
+    <h2>Hasil Kuis</h2>
+    <p id="studentSummary"></p>
+    <div class="row">
+      <div class="stat">Nilai<strong id="score">0</strong></div>
+      <div class="stat">Jawaban benar<strong id="correctCount">0/20</strong></div>
+      <div class="stat">Peringatan<strong id="violationCount">0</strong></div>
+    </div>
+    <p id="resultMessage" class="notice" style="margin-top:16px"></p>
+    <div class="row" style="margin-top:16px">
+      <button id="downloadBtn">Unduh Hasil (CSV)</button>
+      <button id="restartBtn" class="secondary">Kembali ke Awal</button>
+    </div>
+  </section>
 
+  <section id="teacherPanel" class="panel">
+    <div class="row">
+      <div><h2 style="margin:0">Panel Rekap Lokal Guru</h2><p class="muted">Rekap hanya tersimpan di browser/perangkat ini.</p></div>
+      <button id="exportAllBtn" class="secondary">Ekspor Semua Rekap</button>
+    </div>
+    <div id="records"><p class="muted">Belum ada hasil kuis tersimpan pada perangkat ini.</p></div>
+    <button id="clearRecordsBtn" class="danger" style="margin-top:12px">Hapus Rekap Lokal</button>
+  </section>
+</main>
+<footer>Quiz Informatika • Sistem Komputer • Aplikasi latihan/asesmen berbasis browser</footer>
 <script>
-  const video = document.getElementById("video");
-  const startBtn = document.getElementById("startBtn");
-  const stopBtn = document.getElementById("stopBtn");
-  const statusText = document.getElementById("status");
-  const expressionText = document.getElementById("expression");
-  const confidenceText = document.getElementById("confidence");
-  const bars = document.getElementById("bars");
-  const placeholder = document.getElementById("placeholder");
-
-  let stream = null;
-  let detecting = false;
-  let modelsReady = false;
-
-  const labels = {
-    neutral: "😐 Netral",
-    happy: "😊 Senang / Tersenyum",
-    sad: "😢 Sedih",
-    angry: "😠 Marah",
-    fearful: "😨 Takut",
-    disgusted: "🤢 Jijik",
-    surprised: "😲 Terkejut"
-  };
-
-  async function loadModels() {
-    try {
-      statusText.textContent = "Mengunduh model AI...";
-
-      const MODEL_URL =
-        "https://justadudewhohacks.github.io/face-api.js/models";
-
-      await faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL);
-      await faceapi.nets.faceExpressionNet.loadFromUri(MODEL_URL);
-
-      modelsReady = true;
-      startBtn.disabled = false;
-      statusText.textContent = "Model berhasil dimuat. Kamera siap digunakan.";
-    } catch (error) {
-      console.error(error);
-      statusText.textContent =
-        "Gagal memuat model. Periksa koneksi internet dan muat ulang halaman.";
-    }
-  }
-
-  async function startCamera() {
-    if (!modelsReady) return;
-
-    try {
-      stream = await navigator.mediaDevices.getUserMedia({
-        video: {
-          facingMode: "user"
-        },
-        audio: false
-      });
-
-      video.srcObject = stream;
-      video.hidden = false;
-      placeholder.hidden = true;
-
-      await video.play();
-
-      detecting = true;
-      startBtn.disabled = true;
-      stopBtn.disabled = false;
-
-      statusText.textContent = "Kamera aktif. Sedang mendeteksi...";
-      detectExpression();
-
-    } catch (error) {
-      console.error(error);
-      statusText.textContent =
-        "Kamera tidak dapat diakses. Periksa izin kamera browser.";
-    }
-  }
-
-  function stopCamera() {
-    detecting = false;
-
-    if (stream) {
-      stream.getTracks().forEach(track => track.stop());
-      stream = null;
-    }
-
-    video.srcObject = null;
-    video.hidden = true;
-    placeholder.hidden = false;
-
-    startBtn.disabled = !modelsReady;
-    stopBtn.disabled = true;
-
-    expressionText.textContent = "Menunggu...";
-    confidenceText.textContent = "Tingkat keyakinan: -";
-    bars.innerHTML = "";
-
-    statusText.textContent = "Kamera dimatikan.";
-  }
-
-  async function detectExpression() {
-    if (!detecting) return;
-
-    if (video.readyState >= 2) {
-      try {
-        const result = await faceapi
-          .detectSingleFace(
-            video,
-            new faceapi.TinyFaceDetectorOptions()
-          )
-          .withFaceExpressions();
-
-        if (result) {
-          showResult(result.expressions);
-        } else {
-          expressionText.textContent = "Wajah tidak terdeteksi";
-          confidenceText.textContent = "Pastikan wajah terlihat jelas.";
-          bars.innerHTML = "";
-        }
-      } catch (error) {
-        console.error(error);
-      }
-    }
-
-    if (detecting) {
-      setTimeout(detectExpression, 250);
-    }
-  }
-
-  function showResult(expressions) {
-    const sorted = Object.entries(expressions)
-      .sort((a, b) => b[1] - a[1]);
-
-    const [topExpression, score] = sorted[0];
-
-    expressionText.textContent = labels[topExpression];
-    confidenceText.textContent =
-      "Tingkat keyakinan model: " + (score * 100).toFixed(1) + "%";
-
-    bars.innerHTML = "";
-
-    sorted.forEach(([key, value]) => {
-      const percentage = (value * 100).toFixed(1);
-
-      const row = document.createElement("div");
-      row.className = "bar-row";
-
-      const label = document.createElement("p");
-      label.textContent = labels[key] + " — " + percentage + "%";
-
-      const background = document.createElement("div");
-      background.className = "bar-bg";
-
-      const bar = document.createElement("div");
-      bar.className = "bar";
-      bar.style.width = percentage + "%";
-
-      background.appendChild(bar);
-      row.appendChild(label);
-      row.appendChild(background);
-      bars.appendChild(row);
-    });
-  }
-
-  startBtn.addEventListener("click", startCamera);
-  stopBtn.addEventListener("click", stopCamera);
-
-  loadModels();
+"use strict";
+const questions = [
+ {q:"Komponen utama dalam sistem komputer yang berfungsi mengolah data dan menjalankan instruksi adalah ....",o:["Monitor","CPU","Keyboard","Speaker"],a:1},
+ {q:"Perangkat keras komputer disebut juga ....",o:["Software","Brainware","Hardware","Firmware"],a:2},
+ {q:"Orang yang menggunakan atau mengoperasikan komputer disebut ....",o:["Brainware","Hardware","Output","Program"],a:0},
+ {q:"Berikut yang termasuk perangkat masukan (input device) adalah ....",o:["Monitor","Printer","Keyboard","Proyektor"],a:2},
+ {q:"Perangkat yang menampilkan hasil pengolahan data secara visual adalah ....",o:["Mouse","Monitor","Mikrofon","Scanner"],a:1},
+ {q:"Fungsi utama CPU adalah ....",o:["Mencetak dokumen","Menyimpan kertas","Mengolah instruksi dan data","Menghubungkan komputer ke listrik"],a:2},
+ {q:"RAM merupakan jenis memori yang ....",o:["Menyimpan data sementara saat komputer bekerja","Menyimpan data permanen tanpa listrik","Digunakan untuk mencetak","Menampilkan gambar"],a:0},
+ {q:"Manakah yang termasuk media penyimpanan data?",o:["Mouse","SSD","Speaker","Webcam"],a:1},
+ {q:"Contoh perangkat keluaran (output device) adalah ....",o:["Scanner","Keyboard","Monitor","Joystick"],a:2},
+ {q:"Sistem operasi termasuk kelompok ....",o:["Perangkat keras","Perangkat lunak sistem","Brainware","Perangkat masukan"],a:1},
+ {q:"Contoh sistem operasi komputer adalah ....",o:["Microsoft Word","Windows","Google Chrome","Adobe Photoshop"],a:1},
+ {q:"Urutan kerja dasar sistem komputer yang tepat adalah ....",o:["Output–Input–Process","Process–Output–Input","Input–Process–Output","Storage–Input–Output"],a:2},
+ {q:"Ketika mengetik tugas, keyboard berperan sebagai perangkat ....",o:["Input","Output","Penyimpanan","Pemroses"],a:0},
+ {q:"Printer digunakan untuk ....",o:["Memasukkan suara","Mencetak hasil ke media kertas","Mengolah perintah","Menyimpan file daring"],a:1},
+ {q:"Perbedaan utama HDD dan SSD adalah ....",o:["SSD menggunakan piringan magnetik berputar","HDD tidak dapat menyimpan data","SSD menggunakan memori flash dan tidak memiliki bagian mekanis berputar","Keduanya adalah perangkat keluaran"],a:2},
+ {q:"Perangkat lunak aplikasi yang umum digunakan untuk mengolah kata adalah ....",o:["Microsoft Word","BIOS","Device driver","Linux Kernel"],a:0},
+ {q:"Saat komputer dimatikan, isi RAM pada umumnya ....",o:["Tetap tersimpan selamanya","Hilang karena RAM bersifat sementara","Berubah menjadi file cetak","Berpindah otomatis ke monitor"],a:1},
+ {q:"Seorang siswa ingin mengikuti kelas daring dengan suara dan gambar. Perangkat yang diperlukan untuk memasukkan suara dan gambar adalah ....",o:["Printer dan speaker","Mikrofon dan webcam","Monitor dan proyektor","SSD dan RAM"],a:1},
+ {q:"Komputer menyala tetapi tidak dapat menampilkan gambar di monitor. Langkah pemeriksaan awal yang paling tepat adalah ....",o:["Langsung menghapus semua file","Memeriksa kabel daya dan kabel koneksi monitor","Mengganti sistem operasi tanpa pemeriksaan","Memukul layar monitor"],a:1},
+ {q:"Di laboratorium, beberapa komputer terasa lambat saat banyak aplikasi dibuka. Tindakan yang paling masuk akal sebagai langkah awal adalah ....",o:["Membuka lebih banyak aplikasi","Memeriksa penggunaan RAM dan menutup aplikasi yang tidak diperlukan","Mencabut semua kabel","Menghapus seluruh folder sistem"],a:1}
+];
+let current=0, answers=Array(questions.length).fill(null), violations=[], seconds=30*60;
+let timerHandle=null, started=false, finished=false, audioCtx=null, lastWarning=0;
+const $=id=>document.getElementById(id);
+function show(id){$(id).classList.remove("hidden")}
+function hide(id){$(id).classList.add("hidden")}
+function beep(){
+ try{
+  audioCtx=audioCtx||new(window.AudioContext||window.webkitAudioContext)();
+  if(audioCtx.state==="suspended") audioCtx.resume();
+  const osc=audioCtx.createOscillator(), gain=audioCtx.createGain();
+  osc.type="sine";osc.frequency.value=880;gain.gain.value=.12;
+  osc.connect(gain);gain.connect(audioCtx.destination);osc.start();
+  osc.stop(audioCtx.currentTime+.22);
+ }catch(e){/* Audio tidak didukung atau diblokir browser. */}
+}
+function warn(reason){
+ if(!started||finished||Date.now()-lastWarning<1200)return;
+ lastWarning=Date.now();
+ violations.push({time:new Date().toLocaleString("id-ID"),reason});
+ $("warningBox").textContent="PERINGATAN "+violations.length+": "+reason+". Tetap fokus pada halaman kuis.";
+ show("warningBox");beep();
+}
+function renderQuestion(){
+ const item=questions[current];
+ $("progressText").textContent=`Soal ${current+1} dari ${questions.length}`;
+ $("progressBar").style.width=((current+1)/questions.length*100)+"%";
+ $("questionText").textContent=item.q;
+ $("options").innerHTML="";
+ item.o.forEach((option,i)=>{
+  const label=document.createElement("label");label.className="option"+(answers[current]===i?" selected":"");
+  const radio=document.createElement("input");radio.type="radio";radio.name="answer";radio.value=i;radio.checked=answers[current]===i;
+  radio.addEventListener("change",()=>{answers[current]=i;renderQuestion()});
+  const span=document.createElement("span");span.textContent=String.fromCharCode(65+i)+". "+option;
+  label.append(radio,span);$("options").append(label);
+ });
+ $("prevBtn").disabled=current===0;
+ $("nextBtn").disabled=current===questions.length-1;
+}
+function formatTime(s){return String(Math.floor(s/60)).padStart(2,"0")+":"+String(s%60).padStart(2,"0")}
+function startQuiz(){
+ const name=$("studentName").value.trim(), cls=$("studentClass").value.trim();
+ if(!name||!cls){alert("Mohon isi nama lengkap dan kelas terlebih dahulu.");return}
+ started=true;finished=false;current=0;answers=Array(questions.length).fill(null);violations=[];seconds=1800;
+ hide("intro");hide("result");show("quiz");hide("warningBox");
+ // Audio context dibuat setelah interaksi tombol Mulai agar diizinkan browser.
+ beep();renderQuestion();$("timer").textContent="Waktu: "+formatTime(seconds);
+ timerHandle=setInterval(()=>{seconds--; $("timer").textContent="Waktu: "+formatTime(seconds);if(seconds<=0)finishQuiz(true)},1000);
+}
+function finishQuiz(auto=false){
+ if(finished)return;
+ const unanswered=answers.filter(a=>a===null).length;
+ if(!auto&&unanswered>0&&!confirm(`Masih ada ${unanswered} soal belum dijawab. Tetap selesaikan kuis?`))return;
+ finished=true;started=false;clearInterval(timerHandle);
+ const correct=answers.reduce((n,a,i)=>n+(a===questions[i].a?1:0),0);
+ const score=Math.round(correct/questions.length*100);
+ const record={name:$("studentName").value.trim(),kelas:$("studentClass").value.trim(),nilai:score,benar:correct,total:questions.length,pelanggaran:violations.length,detail:violations.map(v=>v.time+" - "+v.reason).join(" | "),tanggal:new Date().toLocaleString("id-ID")};
+ const records=JSON.parse(localStorage.getItem("quizSistemKomputerRecords")||"[]");records.push(record);localStorage.setItem("quizSistemKomputerRecords",JSON.stringify(records));
+ hide("quiz");show("result");
+ $("studentSummary").textContent=`Peserta: ${record.name} • Kelas: ${record.kelas} • Selesai: ${record.tanggal}`;
+ $("score").textContent=score;$("correctCount").textContent=correct+"/20";$("violationCount").textContent=violations.length;
+ $("resultMessage").textContent=(auto?"Waktu pengerjaan telah habis. ":"")+"Jawaban benar: "+correct+" dari 20. Catatan peringatan: "+(violations.length?violations.map(v=>v.reason).join("; "):"Tidak ada")+".";
+ $("downloadBtn").onclick=()=>downloadCSV([record],"hasil_kuis_"+safeName(record.name)+".csv");
+ renderRecords();
+}
+function safeName(s){return s.replace(/[^a-z0-9_-]/gi,"_")}
+function downloadCSV(rows,filename){
+ if(!rows.length){alert("Belum ada data untuk diekspor.");return}
+ const keys=["name","kelas","nilai","benar","total","pelanggaran","detail","tanggal"];
+ const quote=v=>'"'+String(v??"").replace(/"/g,'""')+'"';
+ const csv=[keys.join(","),...rows.map(r=>keys.map(k=>quote(r[k])).join(","))].join("\r\n");
+ const blob=new Blob(["\ufeff"+csv],{type:"text/csv;charset=utf-8"});
+ const url=URL.createObjectURL(blob),a=document.createElement("a");a.href=url;a.download=filename;a.click();URL.revokeObjectURL(url);
+}
+function renderRecords(){
+ const records=JSON.parse(localStorage.getItem("quizSistemKomputerRecords")||"[]");
+ if(!records.length){$("records").innerHTML='<p class="muted">Belum ada hasil kuis tersimpan pada perangkat ini.</p>';return}
+ const table=document.createElement("table"),thead=document.createElement("thead"),tbody=document.createElement("tbody");
+ thead.innerHTML="<tr><th>Nama</th><th>Kelas</th><th>Nilai</th><th>Peringatan</th><th>Tanggal</th></tr>";
+ records.slice().reverse().forEach(r=>{const tr=document.createElement("tr");[r.name,r.kelas,r.nilai,r.pelanggaran,r.tanggal].forEach(v=>{const td=document.createElement("td");td.textContent=v;tr.append(td)});tbody.append(tr)});
+ table.append(thead,tbody);$("records").replaceChildren(table);
+}
+$("startBtn").addEventListener("click",startQuiz);
+$("prevBtn").addEventListener("click",()=>{if(current>0){current--;renderQuestion()}});
+$("nextBtn").addEventListener("click",()=>{if(current<questions.length-1){current++;renderQuestion()}});
+$("finishBtn").addEventListener("click",()=>finishQuiz(false));
+$("restartBtn").addEventListener("click",()=>{hide("result");show("intro");renderRecords()});
+$("exportAllBtn").addEventListener("click",()=>downloadCSV(JSON.parse(localStorage.getItem("quizSistemKomputerRecords")||"[]"),"rekap_semua_peserta.csv"));
+$("clearRecordsBtn").addEventListener("click",()=>{if(confirm("Yakin ingin menghapus seluruh rekap lokal pada browser ini?")){localStorage.removeItem("quizSistemKomputerRecords");renderRecords()}});
+// Deteksi perpindahan tab/jendela yang dapat dilaporkan browser.
+document.addEventListener("visibilitychange",()=>{if(document.hidden)warn("Tab kuis ditinggalkan atau disembunyikan")});
+window.addEventListener("blur",()=>warn("Jendela browser kehilangan fokus"));
+document.addEventListener("fullscreenchange",()=>{if(!document.fullscreenElement)warn("Mode layar penuh ditutup")});
+document.addEventListener("contextmenu",e=>{if(started)e.preventDefault()});
+renderRecords();
 </script>
 </body>
-</html>
+</html>'''
+
+path = Path("/mnt/data/quiz_informatika_sistem_komputer.html")
+path.write_text(html, encoding="utf-8")
+print(f"File dibuat: {path} ({path.stat().st_size:,} bytes)")
